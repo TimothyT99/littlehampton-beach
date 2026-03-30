@@ -113,6 +113,28 @@ const App = (() => {
   }
 
   /* ── Sewage discharge alert ───────────────────────────── */
+
+  const CATEGORY_LABELS = {
+    coastal: 'coastal outfall',
+    river: 'River Arun',
+    tributary: 'local waterway',
+  };
+
+  function describeOutfalls(list) {
+    // Group by category and describe
+    const byCat = {};
+    list.forEach(o => {
+      const cat = o.category || 'coastal';
+      if (!byCat[cat]) byCat[cat] = [];
+      byCat[cat].push(o);
+    });
+    const parts = [];
+    if (byCat.coastal) parts.push(`${byCat.coastal.length} coastal`);
+    if (byCat.river) parts.push(`${byCat.river.length} River Arun`);
+    if (byCat.tributary) parts.push(`${byCat.tributary.length} tributary`);
+    return parts.join(', ');
+  }
+
   function renderDischargeAlert(discharges) {
     const el = document.getElementById('discharge-alert');
     if (!discharges || !discharges.outfalls || !discharges.outfalls.length) {
@@ -125,15 +147,26 @@ const App = (() => {
     const now = Date.now();
 
     if (active.length > 0) {
-      // Active discharge happening now
-      const since = active[0].statusSince ? Utils.formatTime(new Date(active[0].statusSince)) : 'unknown';
+      const desc = describeOutfalls(active);
+      const hasCoastal = active.some(o => o.category === 'coastal');
+      const hasRiver = active.some(o => o.category === 'river');
+
+      let context = '';
+      if (hasCoastal) {
+        context = 'Discharging directly into the sea near the beach.';
+      } else if (hasRiver) {
+        context = 'Discharging into the River Arun \u2014 may affect the beach via the harbour, especially on an outgoing tide.';
+      } else {
+        context = 'Discharging into a local waterway. May affect beach water quality.';
+      }
+
       el.innerHTML = `
         <div class="discharge discharge--active">
           <span class="discharge__icon">\u26A0\uFE0F</span>
           <div class="discharge__text">
-            <strong>Sewage discharge alert</strong> &mdash;
-            ${active.length} storm overflow${active.length > 1 ? 's' : ''} currently discharging near Littlehampton.
-            <span class="discharge__detail">Active since ${since}. Check before entering the water.</span>
+            <strong>Sewage discharge alert</strong> \u2014
+            ${active.length} overflow${active.length > 1 ? 's' : ''} active (${desc}).
+            <span class="discharge__detail">${context} Check before entering the water.</span>
           </div>
         </div>
       `;
@@ -141,28 +174,27 @@ const App = (() => {
       return;
     }
 
-    // No active discharge — check for recent events (last 48 hours)
-    const recentHours = 48;
+    // Check for recent events (last 48 hours)
     const recentOutfalls = outfalls.filter(o => {
       if (!o.latestEnd) return false;
-      const hoursAgo = (now - o.latestEnd) / (1000 * 60 * 60);
-      return hoursAgo < recentHours;
+      return (now - o.latestEnd) / (1000 * 60 * 60) < 48;
     });
 
     if (recentOutfalls.length > 0) {
-      // Find most recent end time
       const mostRecent = recentOutfalls.reduce((a, b) =>
         (b.latestEnd || 0) > (a.latestEnd || 0) ? b : a
       );
       const endDate = new Date(mostRecent.latestEnd);
       const hoursAgo = Math.round((now - mostRecent.latestEnd) / (1000 * 60 * 60));
+      const catLabel = CATEGORY_LABELS[mostRecent.category] || 'outfall';
 
       el.innerHTML = `
         <div class="discharge discharge--recent">
           <span class="discharge__icon">\u26A0</span>
           <div class="discharge__text">
-            <strong>Recent discharge</strong> &mdash;
-            Storm overflow ended ${hoursAgo}h ago (${Utils.formatTime(endDate)}, ${Utils.formatDate(endDate)}).
+            <strong>Recent discharge</strong> \u2014
+            ${catLabel} overflow ended ${hoursAgo}h ago (${Utils.formatTime(endDate)}, ${Utils.formatDate(endDate)}).
+            ${recentOutfalls.length > 1 ? `${recentOutfalls.length} outfalls discharged in the last 48h. ` : ''}
             <span class="discharge__detail">Water quality may still be affected.</span>
           </div>
         </div>
@@ -171,12 +203,13 @@ const App = (() => {
       return;
     }
 
-    // No recent discharges
+    // Clear
     el.innerHTML = `
       <div class="discharge discharge--clear">
         <span class="discharge__icon">\u2714</span>
         <div class="discharge__text">
           No storm overflow discharges reported near Littlehampton in the last 48 hours.
+          <span class="discharge__detail">Monitoring ${outfalls.length} outfalls (coastal, River Arun &amp; tributaries).</span>
         </div>
       </div>
     `;

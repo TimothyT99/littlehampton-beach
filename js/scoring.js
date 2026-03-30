@@ -237,10 +237,12 @@ const Scoring = (() => {
     const effective = windSpeed > 15 ? seaTemp - 2 : seaTemp;
     let result;
     if (effective > 20) result = { text: 'Boardshorts / swimsuit', icon: '\u2600' };
-    else if (effective > 17) result = { text: 'Shorty / 3/2mm spring suit', icon: '\u{1F30A}' };
-    else if (effective > 14) result = { text: '3/2mm full wetsuit', icon: '\u{1F9CA}' };
-    else if (effective > 12) result = { text: '4/3mm wetsuit + boots', icon: '\u{1F9CA}' };
-    else if (effective > 10) result = { text: '5/4mm + boots & gloves', icon: '\u2744' };
+    else if (effective > 18) result = { text: 'Rash vest + boardshorts', icon: '\u2600' };
+    else if (effective > 16) result = { text: 'Shorty wetsuit', icon: '\u{1F30A}' };
+    else if (effective > 14) result = { text: '3/2mm spring suit', icon: '\u{1F30A}' };
+    else if (effective > 12) result = { text: '3/2mm full wetsuit', icon: '\u{1F9CA}' };
+    else if (effective > 10) result = { text: '4/3mm wetsuit + boots', icon: '\u{1F9CA}' };
+    else if (effective > 8) result = { text: '5/4mm + boots & gloves', icon: '\u2744' };
     else result = { text: '5/4mm + hood, boots & gloves', icon: '\u2744' };
     result.sun = null;
     return result;

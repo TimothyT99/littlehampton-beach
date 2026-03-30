@@ -232,16 +232,42 @@ const Scoring = (() => {
    */
   function recommendGear(seaTemp, airTemp, windSpeed) {
     if (seaTemp === null || seaTemp === undefined) {
-      return { text: 'No sea temp data', icon: '\u2014' };
+      return { text: 'No sea temp data', icon: '\u2014', sun: null };
     }
     const effective = windSpeed > 15 ? seaTemp - 2 : seaTemp;
-    if (effective > 20) return { text: 'Boardshorts / swimsuit', icon: '\u2600' };
-    if (effective > 17) return { text: 'Shorty / 3/2mm spring suit', icon: '\u{1F30A}' };
-    if (effective > 14) return { text: '3/2mm full wetsuit', icon: '\u{1F9CA}' };
-    if (effective > 12) return { text: '4/3mm wetsuit + boots', icon: '\u{1F9CA}' };
-    if (effective > 10) return { text: '5/4mm + boots & gloves', icon: '\u2744' };
-    return { text: '5/4mm + hood, boots & gloves', icon: '\u2744' };
+    let result;
+    if (effective > 20) result = { text: 'Boardshorts / swimsuit', icon: '\u2600' };
+    else if (effective > 17) result = { text: 'Shorty / 3/2mm spring suit', icon: '\u{1F30A}' };
+    else if (effective > 14) result = { text: '3/2mm full wetsuit', icon: '\u{1F9CA}' };
+    else if (effective > 12) result = { text: '4/3mm wetsuit + boots', icon: '\u{1F9CA}' };
+    else if (effective > 10) result = { text: '5/4mm + boots & gloves', icon: '\u2744' };
+    else result = { text: '5/4mm + hood, boots & gloves', icon: '\u2744' };
+    result.sun = null;
+    return result;
   }
 
-  return { scoreHour, findWindows, recommendGear, THRESHOLDS };
+  /**
+   * Recommend sun protection based on peak UV index for the day.
+   * Returns { text, spf } or null if UV is low.
+   */
+  function recommendSun(peakUV) {
+    if (peakUV === null || peakUV === undefined || peakUV < 3) return null;
+    if (peakUV < 6) return { text: 'SPF 30 suncream', spf: 30 };
+    if (peakUV < 8) return { text: 'SPF 50 suncream', spf: 50 };
+    return { text: 'SPF 50+ suncream, seek shade', spf: 50 };
+  }
+
+  /**
+   * Get the peak UV index for daytime hours.
+   */
+  function peakUVForDay(hourlyData) {
+    let peak = 0;
+    hourlyData.forEach(h => {
+      const hr = parseInt(h.time.split('T')[1].split(':')[0], 10);
+      if (hr >= 8 && hr <= 18 && h.uvIndex > peak) peak = h.uvIndex;
+    });
+    return peak;
+  }
+
+  return { scoreHour, findWindows, recommendGear, recommendSun, peakUVForDay, THRESHOLDS };
 })();

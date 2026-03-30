@@ -45,6 +45,8 @@ const App = (() => {
 
     const seaTempForGear = (coastal && coastal.seaTemp) ? coastal.seaTemp : current.waterTemp;
     const gear = Scoring.recommendGear(seaTempForGear, current.airTemp, current.windSpeed);
+    const peakUV = Scoring.peakUVForDay(todayData);
+    const sunRec = Scoring.recommendSun(peakUV);
 
     let html = `
       <div class="current-group">
@@ -98,6 +100,11 @@ const App = (() => {
           <div class="current-stat__value">${gear.icon} ${gear.text}</div>
           <div class="current-stat__label">What to Wear</div>
         </div>
+        ${sunRec ? `
+        <div class="current-stat">
+          <div class="current-stat__value">\u2600\uFE0E ${sunRec.text}</div>
+          <div class="current-stat__label">UV ${Utils.r1(peakUV)}</div>
+        </div>` : ''}
       </div>
     `;
 
@@ -119,6 +126,8 @@ const App = (() => {
       const mid = hourly[12] || hourly[Math.floor(hourly.length / 2)] || hourly[0];
       const windows = Scoring.findWindows(hourly, tides, daylight);
       const gear = Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed);
+      const peakUV = Scoring.peakUVForDay(hourly);
+      const sunRec = Scoring.recommendSun(peakUV);
 
       const sunInfo = daylight
         ? `<span class="sun-times">\u2600\uFE0E ${daylight.sunrise} \u2014 ${daylight.sunset}</span>`
@@ -149,6 +158,7 @@ const App = (() => {
             </div>
             <div class="card__wetsuit">
               <span class="wetsuit-badge">${gear.icon} ${gear.text}</span>
+              ${sunRec ? `<span class="sun-badge">\u2600\uFE0E ${sunRec.text} (UV ${Utils.r1(peakUV)})</span>` : ''}
             </div>
           </div>
           <div class="card__ratings">

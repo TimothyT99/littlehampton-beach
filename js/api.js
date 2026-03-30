@@ -20,6 +20,7 @@ const API = (() => {
         'wind_gusts_10m',
         'wind_direction_10m',
         'visibility',
+        'uv_index',
       ].join(','),
       daily: 'sunrise,sunset',
       forecast_days: FORECAST_DAYS,
@@ -119,6 +120,7 @@ const API = (() => {
         windGusts: wh.wind_gusts_10m[i],
         windDir: wh.wind_direction_10m[i],
         visibility: wh.visibility[i],
+        uvIndex: wh.uv_index[i],
         // Marine (may be shorter array)
         waveHeight: mh.wave_height[i] ?? null,
         wavePeriod: mh.wave_period[i] ?? null,

@@ -212,6 +212,70 @@ a { color: var(--blue-mid); }
 
 .rating__icon { font-size: 0.9rem; }
 
+/* ── Wetsuit Badge ───────────────────────────────────── */
+.card__wetsuit {
+  font-size: 0.78rem;
+}
+
+.wetsuit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #e0f2f1;
+  color: #00695c;
+  padding: 0.15rem 0.55rem;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.detail-wetsuit {
+  font-size: 0.85rem;
+  color: #00695c;
+  margin-bottom: 0.6rem;
+}
+
+/* ── Live Data Indicator ─────────────────────────────── */
+.current-group {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.current-group__label {
+  width: 100%;
+  text-align: center;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  margin-bottom: -0.5rem;
+}
+
+.current-divider {
+  width: 1px;
+  background: rgba(255,255,255,0.25);
+  align-self: stretch;
+  margin: 0 0.5rem;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #22c55e;
+  border-radius: 50%;
+  margin-right: 3px;
+  vertical-align: middle;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* ── Loading ─────────────────────────────────────────── */
 .loading {
   text-align: center;

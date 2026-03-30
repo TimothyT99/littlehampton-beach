@@ -5,13 +5,13 @@ const App = (() => {
 
   async function init() {
     try {
-      const { weather, marine, tides } = await API.fetchAll();
+      const { weather, marine, tides, coastal } = await API.fetchAll();
       const hourlyByDay = API.mergeHourlyData(weather, marine);
       const tidesByDay = API.groupTides(tides);
 
       allData = { hourlyByDay, tidesByDay };
 
-      renderCurrentConditions(hourlyByDay);
+      renderCurrentConditions(hourlyByDay, coastal);
       renderCards(hourlyByDay, tidesByDay);
       updateTimestamp();
     } catch (err) {
@@ -21,7 +21,7 @@ const App = (() => {
   }
 
   /* ── Current conditions (header) ─────────────────────── */
-  function renderCurrentConditions(hourlyByDay) {
+  function renderCurrentConditions(hourlyByDay, coastal) {
     const el = document.getElementById('current-conditions');
     const now = new Date();
     const todayKey = Utils.toDateKey(now);
@@ -40,25 +40,69 @@ const App = (() => {
     });
     const current = todayData[Math.max(0, hourIdx)] || todayData[0];
 
-    el.innerHTML = `
-      <div class="current-stat">
-        <div class="current-stat__value">${Utils.r1(current.airTemp)}&deg;C</div>
-        <div class="current-stat__label">Air Temp</div>
-      </div>
-      ${current.waterTemp !== null ? `
-      <div class="current-stat">
-        <div class="current-stat__value">${Utils.r1(current.waterTemp)}&deg;C</div>
-        <div class="current-stat__label">Sea Temp</div>
-      </div>` : ''}
-      <div class="current-stat">
-        <div class="current-stat__value">${Utils.r1(current.windSpeed)} kn</div>
-        <div class="current-stat__label">Wind ${Utils.windCompass(current.windDir)}</div>
-      </div>
-      <div class="current-stat">
-        <div class="current-stat__value">${Utils.r1(current.waveHeight ?? 0)} m</div>
-        <div class="current-stat__label">Waves</div>
+    // Wetsuit recommendation — prefer live sea temp if available
+    const seaTempForGear = (coastal && coastal.seaTemp) ? coastal.seaTemp : current.waterTemp;
+    const gear = Scoring.recommendGear(seaTempForGear, current.airTemp, current.windSpeed);
+
+    // Forecast section
+    let html = `
+      <div class="current-group">
+        <div class="current-group__label">Forecast</div>
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(current.airTemp)}&deg;C</div>
+          <div class="current-stat__label">Air Temp</div>
+        </div>
+        ${current.waterTemp !== null ? `
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(current.waterTemp)}&deg;C</div>
+          <div class="current-stat__label">Sea Temp</div>
+        </div>` : ''}
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(current.windSpeed)} kn</div>
+          <div class="current-stat__label">Wind ${Utils.windCompass(current.windDir)}</div>
+        </div>
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(current.waveHeight ?? 0)} m</div>
+          <div class="current-stat__label">Waves</div>
+        </div>
       </div>
     `;
+
+    // Live coastal data section (if available)
+    if (coastal && coastal.waveHeight !== null) {
+      html += `
+        <div class="current-divider"></div>
+        <div class="current-group">
+          <div class="current-group__label"><span class="live-dot"></span> Live — Rustington</div>
+          <div class="current-stat">
+            <div class="current-stat__value">${coastal.waveHeight} m</div>
+            <div class="current-stat__label">Waves</div>
+          </div>
+          ${coastal.seaTemp !== null ? `
+          <div class="current-stat">
+            <div class="current-stat__value">${coastal.seaTemp}&deg;C</div>
+            <div class="current-stat__label">Sea Temp</div>
+          </div>` : ''}
+          ${coastal.peakPeriod !== null ? `
+          <div class="current-stat">
+            <div class="current-stat__value">${coastal.peakPeriod} s</div>
+            <div class="current-stat__label">Period</div>
+          </div>` : ''}
+        </div>
+      `;
+    }
+
+    // Wetsuit recommendation
+    html += `
+      <div class="current-group">
+        <div class="current-stat">
+          <div class="current-stat__value">${gear.icon} ${gear.text}</div>
+          <div class="current-stat__label">What to Wear</div>
+        </div>
+      </div>
+    `;
+
+    el.innerHTML = html;
   }
 
   /* ── Day cards ───────────────────────────────────────── */
@@ -77,6 +121,9 @@ const App = (() => {
 
       // Score the day
       const scores = Scoring.scoreDay(hourly);
+
+      // Wetsuit recommendation for this day
+      const gear = Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed);
 
       return `
         <div class="card ${today ? 'card--today' : ''}" data-date="${dateKey}" role="button" tabindex="0">
@@ -99,6 +146,9 @@ const App = (() => {
               <span>${Utils.r1(mid.windSpeed)} kn ${Utils.windCompass(mid.windDir)}</span>
               <span>${Utils.r1(mid.waveHeight ?? 0)}m waves</span>
               ${mid.precipProb > 20 ? `<span>${Math.round(mid.precipProb)}% rain</span>` : ''}
+            </div>
+            <div class="card__wetsuit">
+              <span class="wetsuit-badge">${gear.icon} ${gear.text}</span>
             </div>
           </div>
           <div class="card__ratings">
@@ -148,6 +198,10 @@ const App = (() => {
     const hourly = allData.hourlyByDay[dateKey] || [];
     const tides = allData.tidesByDay[dateKey] || [];
 
+    // Wetsuit recommendation for this day (midday)
+    const mid = hourly[12] || hourly[Math.floor(hourly.length / 2)] || hourly[0];
+    const gear = mid ? Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed) : null;
+
     // Filter to useful hours (6am–9pm)
     const dayHours = hourly.filter(h => {
       const hr = parseInt(h.time.split('T')[1].split(':')[0], 10);
@@ -161,7 +215,7 @@ const App = (() => {
         <tr>
           <td><strong>${time}</strong></td>
           <td>${Utils.r1(h.airTemp)}&deg;</td>
-          <td>${h.waterTemp !== null ? Utils.r1(h.waterTemp) + '&deg;' : '—'}</td>
+          <td>${h.waterTemp !== null ? Utils.r1(h.waterTemp) + '&deg;' : '\u2014'}</td>
           <td>${Utils.r1(h.windSpeed)} ${Utils.windCompass(h.windDir)}</td>
           <td>${Utils.r1(h.windGusts)}</td>
           <td>${Utils.r1(h.waveHeight ?? 0)}</td>
@@ -179,8 +233,13 @@ const App = (() => {
          </p>`
       : '';
 
+    const gearInfo = gear
+      ? `<p class="detail-wetsuit">${gear.icon} Recommended: ${gear.text}</p>`
+      : '';
+
     contentEl.innerHTML = `
       ${tideInfo}
+      ${gearInfo}
       <table class="hourly-table">
         <thead>
           <tr>

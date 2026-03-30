@@ -27,13 +27,11 @@ const Scoring = (() => {
     // Poor conditions
     if (wave > 1) return 'poor';
     if (wind > 20) return 'poor';
-    if (waterTemp !== null && waterTemp < 10) return 'poor';
     if (precip > 4) return 'poor';
 
     // Fair conditions
     if (wave > 0.5) return 'fair';
     if (wind > 15) return 'fair';
-    if (waterTemp !== null && waterTemp < 14) return 'fair';
     if (precip > 1) return 'fair';
 
     return 'good';
@@ -108,5 +106,26 @@ const Scoring = (() => {
     };
   }
 
-  return { scoreHour, scoreDay };
+  /**
+   * Recommend wetsuit/gear based on sea temp, air temp, and wind.
+   * Wind chill: if wind > 15kn, shift thresholds up ~2°C (one grade thicker).
+   * Returns { text, icon }
+   */
+  function recommendGear(seaTemp, airTemp, windSpeed) {
+    if (seaTemp === null || seaTemp === undefined) {
+      return { text: 'No sea temp data', icon: '—' };
+    }
+
+    // Wind chill adjustment
+    const effective = windSpeed > 15 ? seaTemp - 2 : seaTemp;
+
+    if (effective > 20) return { text: 'Boardshorts / swimsuit', icon: '\u2600' };
+    if (effective > 17) return { text: 'Shorty / 3/2mm spring suit', icon: '\u{1F30A}' };
+    if (effective > 14) return { text: '3/2mm full wetsuit', icon: '\u{1F9CA}' };
+    if (effective > 12) return { text: '4/3mm wetsuit + boots', icon: '\u{1F9CA}' };
+    if (effective > 10) return { text: '5/4mm + boots & gloves', icon: '\u2744' };
+    return { text: '5/4mm + hood, boots & gloves', icon: '\u2744' };
+  }
+
+  return { scoreHour, scoreDay, recommendGear };
 })();

@@ -64,17 +64,30 @@ const API = (() => {
     }
   }
 
+  /** Fetch live coastal monitoring data — optional, graceful fallback */
+  async function fetchCoastal() {
+    try {
+      const res = await fetch('/.netlify/functions/coastal');
+      if (!res.ok) throw new Error(`${res.status}`);
+      return res.json();
+    } catch {
+      console.warn('Coastal monitoring data unavailable.');
+      return null;
+    }
+  }
+
   /**
    * Fetch all data sources in parallel.
-   * Tides are optional — weather + marine are required.
+   * Tides and coastal are optional — weather + marine are required.
    */
   async function fetchAll() {
-    const [weather, marine, tides] = await Promise.all([
+    const [weather, marine, tides, coastal] = await Promise.all([
       fetchWeather(),
       fetchMarine(),
       fetchTides(),
+      fetchCoastal(),
     ]);
-    return { weather, marine, tides };
+    return { weather, marine, tides, coastal };
   }
 
   /**

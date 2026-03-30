@@ -99,6 +99,40 @@ a { color: var(--blue-mid); }
 }
 .legend__link:hover { text-decoration: underline; }
 
+/* ── Discharge Alert ─────────────────────────────────── */
+.discharge {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.discharge--active {
+  background: #fde8e8;
+  border: 1px solid #f5c6c6;
+  color: #7f1d1d;
+}
+
+.discharge--recent {
+  background: #fef3d6;
+  border: 1px solid #f5e0a0;
+  color: #78350f;
+}
+
+.discharge--clear {
+  background: #e6f5ec;
+  border: 1px solid #b8e0c8;
+  color: #14532d;
+}
+
+.discharge__icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+.discharge__text { flex: 1; }
+.discharge__detail { display: block; font-size: 0.78rem; margin-top: 0.15rem; opacity: 0.8; }
+
 .dot {
   width: 10px;
   height: 10px;

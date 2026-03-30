@@ -5,7 +5,7 @@ const App = (() => {
 
   async function init() {
     try {
-      const { weather, marine, tides, coastal } = await API.fetchAll();
+      const { weather, marine, tides, coastal, discharges } = await API.fetchAll();
       const hourlyByDay = API.mergeHourlyData(weather, marine);
       const daylightByDay = API.extractDaylight(weather);
       const tidesByDay = API.groupTides(tides);
@@ -16,6 +16,7 @@ const App = (() => {
       allData = { hourlyByDay, tidesByDay, daylightByDay };
 
       renderCurrentConditions(hourlyByDay, coastal);
+      renderDischargeAlert(discharges);
       renderCards(hourlyByDay, tidesByDay, daylightByDay);
       updateTimestamp();
     } catch (err) {
@@ -109,6 +110,77 @@ const App = (() => {
     `;
 
     el.innerHTML = html;
+  }
+
+  /* ── Sewage discharge alert ───────────────────────────── */
+  function renderDischargeAlert(discharges) {
+    const el = document.getElementById('discharge-alert');
+    if (!discharges || !discharges.outfalls || !discharges.outfalls.length) {
+      el.hidden = true;
+      return;
+    }
+
+    const outfalls = discharges.outfalls;
+    const active = outfalls.filter(o => o.status === 1);
+    const now = Date.now();
+
+    if (active.length > 0) {
+      // Active discharge happening now
+      const since = active[0].statusSince ? Utils.formatTime(new Date(active[0].statusSince)) : 'unknown';
+      el.innerHTML = `
+        <div class="discharge discharge--active">
+          <span class="discharge__icon">\u26A0\uFE0F</span>
+          <div class="discharge__text">
+            <strong>Sewage discharge alert</strong> &mdash;
+            ${active.length} storm overflow${active.length > 1 ? 's' : ''} currently discharging near Littlehampton.
+            <span class="discharge__detail">Active since ${since}. Check before entering the water.</span>
+          </div>
+        </div>
+      `;
+      el.hidden = false;
+      return;
+    }
+
+    // No active discharge — check for recent events (last 48 hours)
+    const recentHours = 48;
+    const recentOutfalls = outfalls.filter(o => {
+      if (!o.latestEnd) return false;
+      const hoursAgo = (now - o.latestEnd) / (1000 * 60 * 60);
+      return hoursAgo < recentHours;
+    });
+
+    if (recentOutfalls.length > 0) {
+      // Find most recent end time
+      const mostRecent = recentOutfalls.reduce((a, b) =>
+        (b.latestEnd || 0) > (a.latestEnd || 0) ? b : a
+      );
+      const endDate = new Date(mostRecent.latestEnd);
+      const hoursAgo = Math.round((now - mostRecent.latestEnd) / (1000 * 60 * 60));
+
+      el.innerHTML = `
+        <div class="discharge discharge--recent">
+          <span class="discharge__icon">\u26A0</span>
+          <div class="discharge__text">
+            <strong>Recent discharge</strong> &mdash;
+            Storm overflow ended ${hoursAgo}h ago (${Utils.formatTime(endDate)}, ${Utils.formatDate(endDate)}).
+            <span class="discharge__detail">Water quality may still be affected.</span>
+          </div>
+        </div>
+      `;
+      el.hidden = false;
+      return;
+    }
+
+    // No recent discharges
+    el.innerHTML = `
+      <div class="discharge discharge--clear">
+        <span class="discharge__icon">\u2714</span>
+        <div class="discharge__text">
+          No storm overflow discharges reported near Littlehampton in the last 48 hours.
+        </div>
+      </div>
+    `;
+    el.hidden = false;
   }
 
   /* ── Day cards ───────────────────────────────────────── */

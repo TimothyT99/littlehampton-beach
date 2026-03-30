@@ -78,18 +78,31 @@ const API = (() => {
     }
   }
 
+  /** Fetch storm overflow discharge data — optional, graceful fallback */
+  async function fetchDischarges() {
+    try {
+      const res = await fetch('/.netlify/functions/discharges');
+      if (!res.ok) throw new Error(`${res.status}`);
+      return res.json();
+    } catch {
+      console.warn('Storm overflow data unavailable.');
+      return null;
+    }
+  }
+
   /**
    * Fetch all data sources in parallel.
-   * Tides and coastal are optional — weather + marine are required.
+   * Tides, coastal and discharges are optional — weather + marine are required.
    */
   async function fetchAll() {
-    const [weather, marine, tides, coastal] = await Promise.all([
+    const [weather, marine, tides, coastal, discharges] = await Promise.all([
       fetchWeather(),
       fetchMarine(),
       fetchTides(),
       fetchCoastal(),
+      fetchDischarges(),
     ]);
-    return { weather, marine, tides, coastal };
+    return { weather, marine, tides, coastal, discharges };
   }
 
   /**

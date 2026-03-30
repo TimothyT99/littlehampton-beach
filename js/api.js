@@ -152,5 +152,60 @@ const API = (() => {
     return days;
   }
 
-  return { fetchAll, mergeHourlyData, groupTides };
+  /**
+   * Enrich hourly data with tide state by interpolating between
+   * Admiralty high/low events. Sets tideState and tideHeight on each hour.
+   */
+  function addTideState(hourlyByDay, tidesByDay) {
+    Object.keys(hourlyByDay).forEach(dateKey => {
+      const hours = hourlyByDay[dateKey];
+      const tides = tidesByDay[dateKey] || [];
+
+      if (!tides.length) return;
+
+      // Build a list of tide event timestamps (as fractional hours) for this day
+      const events = tides.map(t => ({
+        type: t.type,
+        hour: t.date.getHours() + t.date.getMinutes() / 60,
+        height: t.height,
+      }));
+
+      hours.forEach(h => {
+        const hr = parseInt(h.time.split('T')[1].split(':')[0], 10);
+
+        // Find nearest tide event
+        let nearest = null;
+        let nearestDist = Infinity;
+        events.forEach(e => {
+          const dist = Math.abs(hr - e.hour);
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = e;
+          }
+        });
+
+        if (!nearest) return;
+
+        if (nearestDist <= 1) {
+          // Within ±1hr of an event
+          h.tideState = nearest.type === 'HighWater' ? 'high' : 'low';
+        } else if (nearestDist <= 2 && nearest.type === 'HighWater') {
+          h.tideState = 'near_high';
+        } else if (nearestDist <= 2 && nearest.type === 'LowWater') {
+          h.tideState = 'near_low';
+        } else {
+          // Determine rising or falling based on surrounding events
+          const before = events.filter(e => e.hour <= hr).pop();
+          const after = events.find(e => e.hour > hr);
+          if (before && before.type === 'LowWater') h.tideState = 'rising';
+          else if (before && before.type === 'HighWater') h.tideState = 'falling';
+          else h.tideState = null;
+        }
+
+        h.tideHeight = nearest.height;
+      });
+    });
+  }
+
+  return { fetchAll, mergeHourlyData, groupTides, addTideState };
 })();

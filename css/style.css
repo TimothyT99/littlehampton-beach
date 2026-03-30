@@ -192,25 +192,47 @@ a { color: var(--blue-mid); }
 .card__ratings {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
-.rating {
+/* ── Window Badges (time-based activity ratings) ─────── */
+.window-badge {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.4rem;
   font-size: 0.78rem;
-  font-weight: 500;
   padding: 0.2rem 0.55rem;
-  border-radius: 20px;
-  white-space: nowrap;
+  border-radius: 8px;
+  line-height: 1.3;
+  flex-wrap: wrap;
 }
 
-.rating--good { background: #e6f5ec; color: #1a7a37; }
-.rating--fair { background: #fef3d6; color: #956a00; }
-.rating--poor { background: #fde8e8; color: #b91c1c; }
+.window-badge--good { background: #e6f5ec; color: #1a7a37; }
+.window-badge--fair { background: #fef3d6; color: #956a00; }
+.window-badge--poor { background: #fde8e8; color: #b91c1c; }
 
-.rating__icon { font-size: 0.9rem; }
+.window-badge__label {
+  font-weight: 600;
+  min-width: 3.2em;
+}
+
+.window-badge__time {
+  font-weight: 500;
+}
+
+.window-badge__tide {
+  font-size: 0.7rem;
+  opacity: 0.75;
+  font-weight: 400;
+}
+
+/* Window badges in detail panel */
+.detail-windows {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
 
 /* ── Wetsuit Badge ───────────────────────────────────── */
 .card__wetsuit {
@@ -385,9 +407,11 @@ a { color: var(--blue-mid); }
 
   .card__ratings {
     grid-column: 1 / -1;
-    flex-direction: row;
-    justify-content: flex-start;
+    flex-direction: column;
   }
+
+  .window-badge { font-size: 0.72rem; }
+  .window-badge__tide { font-size: 0.65rem; }
 
   .card__weather { gap: 0.5rem; }
 

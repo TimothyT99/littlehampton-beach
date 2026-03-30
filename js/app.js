@@ -9,6 +9,9 @@ const App = (() => {
       const hourlyByDay = API.mergeHourlyData(weather, marine);
       const tidesByDay = API.groupTides(tides);
 
+      // Enrich hourly data with tide state
+      API.addTideState(hourlyByDay, tidesByDay);
+
       allData = { hourlyByDay, tidesByDay };
 
       renderCurrentConditions(hourlyByDay, coastal);
@@ -73,7 +76,7 @@ const App = (() => {
       html += `
         <div class="current-divider"></div>
         <div class="current-group">
-          <div class="current-group__label"><span class="live-dot"></span> Live — Rustington</div>
+          <div class="current-group__label"><span class="live-dot"></span> Live \u2014 Rustington</div>
           <div class="current-stat">
             <div class="current-stat__value">${coastal.waveHeight} m</div>
             <div class="current-stat__label">Waves</div>
@@ -119,8 +122,8 @@ const App = (() => {
       // Day summary weather (midday-ish, index 12)
       const mid = hourly[12] || hourly[Math.floor(hourly.length / 2)] || hourly[0];
 
-      // Score the day
-      const scores = Scoring.scoreDay(hourly);
+      // Find time windows for each activity
+      const windows = Scoring.findWindows(hourly, tides);
 
       // Wetsuit recommendation for this day
       const gear = Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed);
@@ -152,9 +155,9 @@ const App = (() => {
             </div>
           </div>
           <div class="card__ratings">
-            ${ratingBadge('Swim', scores.swim)}
-            ${ratingBadge('Kayak', scores.kayak)}
-            ${ratingBadge('SUP', scores.sup)}
+            ${windowBadge('Swim', windows.swim)}
+            ${windowBadge('Kayak', windows.kayak)}
+            ${windowBadge('SUP', windows.sup)}
           </div>
         </div>
       `;
@@ -174,13 +177,13 @@ const App = (() => {
     });
   }
 
-  function ratingBadge(label, rating) {
-    const icons = { good: '\u2713', fair: '\u223C', poor: '\u2717' };
+  function windowBadge(label, win) {
     return `
-      <span class="rating rating--${rating}">
-        <span class="rating__icon">${icons[rating]}</span>
-        ${label}
-      </span>
+      <div class="window-badge window-badge--${win.rating}">
+        <span class="window-badge__label">${label}</span>
+        <span class="window-badge__time">${win.label}</span>
+        ${win.tideNote ? `<span class="window-badge__tide">${win.tideNote}</span>` : ''}
+      </div>
     `;
   }
 
@@ -193,7 +196,7 @@ const App = (() => {
 
     const parts = Utils.dateParts(dateKey);
     const today = Utils.isToday(dateKey);
-    titleEl.textContent = `${today ? 'Today' : parts.day} ${parts.dateNum} ${parts.month} — Hourly Breakdown`;
+    titleEl.textContent = `${today ? 'Today' : parts.day} ${parts.dateNum} ${parts.month} \u2014 Hourly Breakdown`;
 
     const hourly = allData.hourlyByDay[dateKey] || [];
     const tides = allData.tidesByDay[dateKey] || [];
@@ -201,6 +204,9 @@ const App = (() => {
     // Wetsuit recommendation for this day (midday)
     const mid = hourly[12] || hourly[Math.floor(hourly.length / 2)] || hourly[0];
     const gear = mid ? Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed) : null;
+
+    // Time windows summary
+    const windows = Scoring.findWindows(hourly, tides);
 
     // Filter to useful hours (6am–9pm)
     const dayHours = hourly.filter(h => {
@@ -237,9 +243,18 @@ const App = (() => {
       ? `<p class="detail-wetsuit">${gear.icon} Recommended: ${gear.text}</p>`
       : '';
 
+    const windowsSummary = `
+      <div class="detail-windows">
+        ${windowBadge('Swim', windows.swim)}
+        ${windowBadge('Kayak', windows.kayak)}
+        ${windowBadge('SUP', windows.sup)}
+      </div>
+    `;
+
     contentEl.innerHTML = `
       ${tideInfo}
       ${gearInfo}
+      ${windowsSummary}
       <table class="hourly-table">
         <thead>
           <tr>

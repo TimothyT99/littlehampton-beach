@@ -5,10 +5,20 @@ const App = (() => {
 
   async function init() {
     try {
-      const { weather, marine, tides, coastal, met, discharges } = await API.fetchAll();
+      const { weather, marine, tides, coastal, met, discharges, weatherFailed } = await API.fetchAll();
+      const tidesByDay = API.groupTides(tides);
+
+      if (weatherFailed || !weather) {
+        // Degraded mode — show live station data + tides only
+        renderDegradedConditions(coastal, met, tidesByDay);
+        renderDischargeAlert(discharges);
+        showDegradedNotice();
+        updateTimestamp();
+        return;
+      }
+
       const hourlyByDay = API.mergeHourlyData(weather, marine);
       const daylightByDay = API.extractDaylight(weather);
-      const tidesByDay = API.groupTides(tides);
 
       // Enrich hourly data with tide state
       API.addTideState(hourlyByDay, tidesByDay);
@@ -132,6 +142,97 @@ const App = (() => {
     `;
 
     el.innerHTML = html;
+  }
+
+  /* ── Degraded mode (weather API down) ─────────────────── */
+  function renderDegradedConditions(coastal, met, tidesByDay) {
+    const el = document.getElementById('current-conditions');
+    const now = new Date();
+
+    const hasLive = coastal || met;
+    if (!hasLive) {
+      el.innerHTML = '<span class="current-loading">Live data sources unavailable</span>';
+      return;
+    }
+
+    let html = `
+      <div class="current-group">
+        <div class="current-group__label"><span class="live-dot"></span> Live stations only</div>
+        ${met && met.airTemp !== null ? `
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(met.airTemp)}&deg;C</div>
+          <div class="current-stat__label">Air</div>
+        </div>` : ''}
+        ${coastal && coastal.seaTemp !== null ? `
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(coastal.seaTemp)}&deg;C</div>
+          <div class="current-stat__label">Sea</div>
+        </div>` : ''}
+        ${met && met.windSpeedKn !== null ? `
+        <div class="current-stat">
+          <div class="current-stat__value">${Utils.r1(met.windSpeedKn)} kn${met.gustSpeedKn ? ` (${Utils.r1(met.gustSpeedKn)})` : ''}</div>
+          <div class="current-stat__label">Wind${met.windDirection !== null ? ' ' + Utils.windCompass(met.windDirection) : ''}</div>
+        </div>` : ''}
+        ${coastal && coastal.waveHeight !== null ? `
+        <div class="current-stat">
+          <div class="current-stat__value">${coastal.waveHeight} m</div>
+          <div class="current-stat__label">Waves</div>
+        </div>` : ''}
+      </div>
+    `;
+
+    // Tide countdown
+    const tideInfo = getNextTide(tidesByDay, now);
+    if (tideInfo) {
+      html += `
+        <div class="current-divider"></div>
+        <div class="current-group">
+          <div class="current-group__label">Tides</div>
+          <div class="current-stat">
+            <div class="current-stat__value">${tideInfo.icon} ${tideInfo.time}</div>
+            <div class="current-stat__label">${tideInfo.label} (${tideInfo.height}m)</div>
+          </div>
+          ${tideInfo.next ? `
+          <div class="current-stat">
+            <div class="current-stat__value">${tideInfo.next.icon} ${tideInfo.next.time}</div>
+            <div class="current-stat__label">${tideInfo.next.label} (${tideInfo.next.height}m)</div>
+          </div>` : ''}
+          <div class="current-stat">
+            <div class="current-stat__value">${tideInfo.countdown}</div>
+            <div class="current-stat__label">${tideInfo.countdownLabel}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Gear recommendation from live data
+    const seaTemp = coastal ? coastal.seaTemp : null;
+    const airTemp = met ? met.airTemp : null;
+    const wind = met ? met.windSpeedKn : 0;
+    if (seaTemp !== null) {
+      const gear = Scoring.recommendGear(seaTemp, airTemp, wind);
+      html += `
+        <div class="current-divider"></div>
+        <div class="current-group">
+          <div class="current-stat">
+            <div class="current-stat__value">${gear.icon} ${gear.text}</div>
+            <div class="current-stat__label">What to Wear</div>
+          </div>
+        </div>
+      `;
+    }
+
+    el.innerHTML = html;
+  }
+
+  function showDegradedNotice() {
+    document.getElementById('forecast-cards').innerHTML = `
+      <div class="error" style="background: #fef3d6; color: #78350f; border: 1px solid #f5e0a0;">
+        <p><strong>Forecast temporarily unavailable</strong></p>
+        <p>The weather forecast service is currently down. Live conditions from local stations are shown above.</p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;">The 7-day forecast will return when the service is restored. Try refreshing later.</p>
+      </div>
+    `;
   }
 
   /**

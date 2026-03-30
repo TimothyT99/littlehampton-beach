@@ -109,18 +109,32 @@ const API = (() => {
 
   /**
    * Fetch all data sources in parallel.
-   * Tides, coastal and discharges are optional — weather + marine are required.
+   * Weather is the primary source — if it fails, we enter degraded mode
+   * using live station data (met + coastal) for current conditions only.
    */
   async function fetchAll() {
-    const [weather, marine, tides, coastal, met, discharges] = await Promise.all([
-      fetchWeather(),
-      fetchMarine(),
+    // Fetch optional sources regardless
+    const optionalPromises = Promise.all([
       fetchTides(),
       fetchCoastal(),
       fetchMet(),
       fetchDischarges(),
     ]);
-    return { weather, marine, tides, coastal, met, discharges };
+
+    let weather = null;
+    let marine = null;
+    let weatherFailed = false;
+
+    try {
+      [weather, marine] = await Promise.all([fetchWeather(), fetchMarine()]);
+    } catch (err) {
+      console.warn('Weather/Marine API failed — entering degraded mode:', err.message);
+      weatherFailed = true;
+    }
+
+    const [tides, coastal, met, discharges] = await optionalPromises;
+
+    return { weather, marine, tides, coastal, met, discharges, weatherFailed };
   }
 
   /**

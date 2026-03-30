@@ -15,21 +15,22 @@ exports.handler = async () => {
 
     const html = await response.text();
 
-    // Extract the latest data row from the waves table.
-    // The page has a <tbody> with rows of sensor readings.
-    // Each row has <td> cells in order:
-    // Date/Time, Lat, Lon, Hs, Hmax, Tpeak, Tz, PeakDir, Spread, SeaTemp, Te, Power
-    const tbodyMatch = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
-    if (!tbodyMatch) {
+    // Extract data rows from the waves table.
+    // The table uses class="table table-striped" with NO <tbody> —
+    // <tr> rows sit directly inside <table>. Skip header rows (<th>).
+    // Columns: Date/Time, Lat, Lon, Hs, Hmax, Tpeak, Tz, PeakDir, Spread, SeaTemp, Te, Power
+    const tableMatch = html.match(/<table[^>]*class="[^"]*table[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
+    if (!tableMatch) {
       return {
         statusCode: 502,
         body: JSON.stringify({ error: 'Could not find data table in page' }),
       };
     }
 
-    // Get the last row (most recent reading)
-    const rows = tbodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
-    if (!rows || rows.length === 0) {
+    // Get all data rows (those containing <td>, not <th>)
+    const allRows = tableMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+    const rows = allRows.filter(r => /<td/i.test(r));
+    if (rows.length === 0) {
       return {
         statusCode: 502,
         body: JSON.stringify({ error: 'No data rows found' }),

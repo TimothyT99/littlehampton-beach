@@ -251,7 +251,6 @@ const App = (() => {
               ${context} Check before entering the water.<br>
               Outfalls: ${listOutfallIds(active)}.
               <a href="${SW_HISTORY_URL}" target="_blank" rel="noopener" class="discharge__link">Southern Water details &rarr;</a>
-              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">Live map &rarr;</a>
             </span>
           </div>
         </div>
@@ -284,7 +283,6 @@ const App = (() => {
             <span class="discharge__detail">
               Water quality may still be affected. ${mostRecent.id} (${mostRecent.waterCourse}).
               <a href="${SW_HISTORY_URL}" target="_blank" rel="noopener" class="discharge__link">Southern Water details &rarr;</a>
-              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">Live map &rarr;</a>
             </span>
           </div>
         </div>

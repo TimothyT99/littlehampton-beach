@@ -91,6 +91,14 @@ a { color: var(--blue-mid); }
 
 .legend__item { display: flex; align-items: center; gap: 0.3rem; }
 
+.legend__link {
+  font-size: 0.8rem;
+  color: var(--blue-mid);
+  text-decoration: none;
+  margin-left: auto;
+}
+.legend__link:hover { text-decoration: underline; }
+
 .dot {
   width: 10px;
   height: 10px;
@@ -178,6 +186,12 @@ a { color: var(--blue-mid); }
 }
 
 .tide-event--high { color: var(--blue-mid); font-weight: 500; }
+
+.sun-times {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  opacity: 0.8;
+}
 
 .card__weather {
   display: flex;

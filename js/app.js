@@ -1,21 +1,22 @@
 /* ── Main application ─────────────────────────────────── */
 
 const App = (() => {
-  let allData = null; // { hourlyByDay, tidesByDay }
+  let allData = null; // { hourlyByDay, tidesByDay, daylightByDay }
 
   async function init() {
     try {
       const { weather, marine, tides, coastal } = await API.fetchAll();
       const hourlyByDay = API.mergeHourlyData(weather, marine);
+      const daylightByDay = API.extractDaylight(weather);
       const tidesByDay = API.groupTides(tides);
 
       // Enrich hourly data with tide state
       API.addTideState(hourlyByDay, tidesByDay);
 
-      allData = { hourlyByDay, tidesByDay };
+      allData = { hourlyByDay, tidesByDay, daylightByDay };
 
       renderCurrentConditions(hourlyByDay, coastal);
-      renderCards(hourlyByDay, tidesByDay);
+      renderCards(hourlyByDay, tidesByDay, daylightByDay);
       updateTimestamp();
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -36,18 +37,15 @@ const App = (() => {
       return;
     }
 
-    // Find closest hour
     const hourIdx = todayData.findIndex(h => {
       const hh = h.time.split('T')[1].split(':')[0];
       return parseInt(hh) >= parseInt(currentHour);
     });
     const current = todayData[Math.max(0, hourIdx)] || todayData[0];
 
-    // Wetsuit recommendation — prefer live sea temp if available
     const seaTempForGear = (coastal && coastal.seaTemp) ? coastal.seaTemp : current.waterTemp;
     const gear = Scoring.recommendGear(seaTempForGear, current.airTemp, current.windSpeed);
 
-    // Forecast section
     let html = `
       <div class="current-group">
         <div class="current-group__label">Forecast</div>
@@ -71,7 +69,6 @@ const App = (() => {
       </div>
     `;
 
-    // Live coastal data section (if available)
     if (coastal && coastal.waveHeight !== null) {
       html += `
         <div class="current-divider"></div>
@@ -95,7 +92,6 @@ const App = (() => {
       `;
     }
 
-    // Wetsuit recommendation
     html += `
       <div class="current-group">
         <div class="current-stat">
@@ -109,24 +105,24 @@ const App = (() => {
   }
 
   /* ── Day cards ───────────────────────────────────────── */
-  function renderCards(hourlyByDay, tidesByDay) {
+  function renderCards(hourlyByDay, tidesByDay, daylightByDay) {
     const container = document.getElementById('forecast-cards');
     const sortedDays = Object.keys(hourlyByDay).sort();
 
     const html = sortedDays.map(dateKey => {
       const hourly = hourlyByDay[dateKey];
       const tides = tidesByDay[dateKey] || [];
+      const daylight = daylightByDay[dateKey] || null;
       const parts = Utils.dateParts(dateKey);
       const today = Utils.isToday(dateKey);
 
-      // Day summary weather (midday-ish, index 12)
       const mid = hourly[12] || hourly[Math.floor(hourly.length / 2)] || hourly[0];
-
-      // Find time windows for each activity
-      const windows = Scoring.findWindows(hourly, tides);
-
-      // Wetsuit recommendation for this day
+      const windows = Scoring.findWindows(hourly, tides, daylight);
       const gear = Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed);
+
+      const sunInfo = daylight
+        ? `<span class="sun-times">\u2600\uFE0E ${daylight.sunrise} \u2014 ${daylight.sunset}</span>`
+        : '';
 
       return `
         <div class="card ${today ? 'card--today' : ''}" data-date="${dateKey}" role="button" tabindex="0">
@@ -143,6 +139,7 @@ const App = (() => {
                 </span>
               `).join('')}
               ${tides.length === 0 ? '<span class="tide-event">No tide data</span>' : ''}
+              ${sunInfo}
             </div>
             <div class="card__weather">
               <span>${Utils.r1(mid.airTemp)}&deg;C</span>
@@ -165,7 +162,6 @@ const App = (() => {
 
     container.innerHTML = html;
 
-    // Attach click handlers
     container.querySelectorAll('.card').forEach(card => {
       card.addEventListener('click', () => openDetail(card.dataset.date));
       card.addEventListener('keydown', e => {
@@ -178,10 +174,11 @@ const App = (() => {
   }
 
   function windowBadge(label, win) {
+    const reasonText = win.reason ? ` \u2014 ${win.reason}` : '';
     return `
       <div class="window-badge window-badge--${win.rating}">
         <span class="window-badge__label">${label}</span>
-        <span class="window-badge__time">${win.label}</span>
+        <span class="window-badge__time">${win.label}${reasonText}</span>
         ${win.tideNote ? `<span class="window-badge__tide">${win.tideNote}</span>` : ''}
       </div>
     `;
@@ -200,13 +197,11 @@ const App = (() => {
 
     const hourly = allData.hourlyByDay[dateKey] || [];
     const tides = allData.tidesByDay[dateKey] || [];
+    const daylight = allData.daylightByDay[dateKey] || null;
 
-    // Wetsuit recommendation for this day (midday)
     const mid = hourly[12] || hourly[Math.floor(hourly.length / 2)] || hourly[0];
     const gear = mid ? Scoring.recommendGear(mid.waterTemp, mid.airTemp, mid.windSpeed) : null;
-
-    // Time windows summary
-    const windows = Scoring.findWindows(hourly, tides);
+    const windows = Scoring.findWindows(hourly, tides, daylight);
 
     // Filter to useful hours (6am–9pm)
     const dayHours = hourly.filter(h => {
@@ -239,6 +234,10 @@ const App = (() => {
          </p>`
       : '';
 
+    const sunInfo = daylight
+      ? `<p style="margin-bottom:0.5rem;font-size:0.85rem;color:#64748b;">\u2600\uFE0E Sunrise ${daylight.sunrise} &bull; Sunset ${daylight.sunset}</p>`
+      : '';
+
     const gearInfo = gear
       ? `<p class="detail-wetsuit">${gear.icon} Recommended: ${gear.text}</p>`
       : '';
@@ -253,6 +252,7 @@ const App = (() => {
 
     contentEl.innerHTML = `
       ${tideInfo}
+      ${sunInfo}
       ${gearInfo}
       ${windowsSummary}
       <table class="hourly-table">

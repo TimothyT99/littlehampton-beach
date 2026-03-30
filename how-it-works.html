@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How It Works — Littlehampton Beach</title>
+  <meta name="description" content="How the Littlehampton Beach watersports forecast works. Scoring factors, data sources and methodology explained.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .explainer { max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    .explainer h2 { font-size: 1.2rem; margin: 2rem 0 0.6rem; color: var(--blue-deep); border-bottom: 2px solid var(--blue-light); padding-bottom: 0.3rem; }
+    .explainer h3 { font-size: 1rem; margin: 1.2rem 0 0.4rem; }
+    .explainer p { font-size: 0.9rem; line-height: 1.6; margin-bottom: 0.8rem; color: var(--text); }
+    .explainer ul { font-size: 0.9rem; line-height: 1.6; padding-left: 1.2rem; margin-bottom: 0.8rem; }
+    .explainer li { margin-bottom: 0.3rem; }
+    .explainer table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.8rem 0 1.2rem; }
+    .explainer th { text-align: left; padding: 0.5rem; background: var(--blue-light); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .explainer td { padding: 0.5rem; border-bottom: 1px solid #e8edf2; }
+    .explainer .back-link { display: inline-block; margin-bottom: 1rem; font-size: 0.85rem; color: var(--blue-mid); text-decoration: none; }
+    .explainer .back-link:hover { text-decoration: underline; }
+    .cell-good { color: var(--green); font-weight: 600; }
+    .cell-fair { color: var(--amber); font-weight: 600; }
+    .cell-poor { color: var(--red); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header__inner">
+      <h1 class="header__title">How It Works</h1>
+      <p class="header__subtitle">Littlehampton Beach Watersports Forecast</p>
+    </div>
+  </header>
+
+  <main class="explainer">
+    <a href="index.html" class="back-link">&larr; Back to forecast</a>
+
+    <h2>Overview</h2>
+    <p>
+      The dashboard combines data from three sources to assess whether conditions are suitable for
+      swimming, kayaking and stand-up paddleboarding (SUP) at Littlehampton Beach.
+      It looks at each hour of the day and identifies the best time windows for each activity.
+    </p>
+    <p>
+      This is automated guidance only. Always check conditions on arrival and use your own judgement.
+    </p>
+
+    <h2>Data Sources</h2>
+    <ul>
+      <li><strong>Weather forecast</strong> (wind, temperature, rain, visibility, sunrise/sunset) &mdash;
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>, sourced from
+        ECMWF, DWD, Met Office and other national weather services.</li>
+      <li><strong>Marine forecast</strong> (wave height, wave period, swell, sea temperature) &mdash;
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo Marine API</a>,
+        sourced from Copernicus Marine Service.</li>
+      <li><strong>Tidal predictions</strong> (high/low water times and heights) &mdash;
+        <a href="https://www.admiralty.co.uk" target="_blank" rel="noopener">ADMIRALTY</a> UK Tidal API
+        for Littlehampton (Station 0074). Crown copyright and database right.</li>
+      <li><strong>Live wave conditions</strong> (real-time wave height, period, sea temperature) &mdash;
+        <a href="https://coastalmonitoring.org/" target="_blank" rel="noopener">Regional Coastal Monitoring Programme</a>,
+        Rustington wave buoy. Not quality-controlled.</li>
+    </ul>
+
+    <h2>Activity Scoring</h2>
+    <p>
+      Each hour during daylight is scored as <span class="cell-good">good</span>,
+      <span class="cell-fair">fair</span> or <span class="cell-poor">poor</span> for each activity.
+      The thresholds are:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Factor</th>
+          <th>Swimming</th>
+          <th>Kayaking</th>
+          <th>SUP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Wave height &mdash; <span class="cell-poor">poor</span></td>
+          <td>&gt; 1.0 m</td>
+          <td>&gt; 0.7 m</td>
+          <td>&gt; 0.5 m</td>
+        </tr>
+        <tr>
+          <td>Wave height &mdash; <span class="cell-fair">fair</span></td>
+          <td>&gt; 0.5 m</td>
+          <td>&gt; 0.3 m</td>
+          <td>&gt; 0.3 m</td>
+        </tr>
+        <tr>
+          <td>Wind speed &mdash; <span class="cell-poor">poor</span></td>
+          <td>&gt; 20 kn</td>
+          <td>&gt; 18 kn</td>
+          <td>&gt; 15 kn</td>
+        </tr>
+        <tr>
+          <td>Wind speed &mdash; <span class="cell-fair">fair</span></td>
+          <td>&gt; 15 kn</td>
+          <td>&gt; 12 kn</td>
+          <td>&gt; 10 kn</td>
+        </tr>
+        <tr>
+          <td>Wind gusts &mdash; <span class="cell-poor">poor</span></td>
+          <td>&mdash;</td>
+          <td>&gt; 25 kn</td>
+          <td>&gt; 20 kn</td>
+        </tr>
+        <tr>
+          <td>Wind gusts &mdash; <span class="cell-fair">fair</span></td>
+          <td>&mdash;</td>
+          <td>&gt; 18 kn</td>
+          <td>&gt; 15 kn</td>
+        </tr>
+        <tr>
+          <td>Precipitation &mdash; <span class="cell-poor">poor</span></td>
+          <td>&gt; 4 mm/h</td>
+          <td>&gt; 4 mm/h</td>
+          <td>&gt; 3 mm/h</td>
+        </tr>
+        <tr>
+          <td>Precipitation &mdash; <span class="cell-fair">fair</span></td>
+          <td>&gt; 1 mm/h</td>
+          <td>&gt; 1 mm/h</td>
+          <td>&gt; 0.5 mm/h</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Tide Impact</h2>
+    <p>
+      Tidal state is calculated for each hour based on proximity to Admiralty high/low water predictions.
+    </p>
+    <ul>
+      <li><strong>Low tide</strong> (within &plusmn;1 hour of low water) &mdash; downgrades kayak and SUP by one level
+        (good &rarr; fair, fair &rarr; poor). Swimming is also downgraded at low tide. At Littlehampton,
+        low tide exposes shallow water and can make launching difficult.</li>
+      <li><strong>Near low tide</strong> (within &plusmn;2 hours) &mdash; downgrades kayak and SUP by one level.</li>
+      <li><strong>High tide and rising/falling</strong> &mdash; no penalty. Generally the best conditions for
+        all watersports, with more water depth and better access.</li>
+    </ul>
+    <p>
+      When a time window is shown, the dashboard also notes its relationship to high tide
+      (e.g. &ldquo;around high tide 10:34&rdquo;) for kayak and SUP.
+    </p>
+
+    <h2>Time Windows</h2>
+    <p>
+      Rather than a single rating for the whole day, the dashboard finds the best contiguous period
+      of <span class="cell-good">good</span> or <span class="cell-fair">fair</span> hours during daylight:
+    </p>
+    <ul>
+      <li><strong>All day</strong> &mdash; conditions are suitable for nearly all daylight hours.</li>
+      <li><strong>From HH:00</strong> &mdash; conditions improve from that time until sunset.</li>
+      <li><strong>Until HH:00</strong> &mdash; conditions are suitable from sunrise until that time.</li>
+      <li><strong>HH:00&ndash;HH:00</strong> &mdash; a specific window during the day.</li>
+      <li><strong>Avoid &mdash; [reason]</strong> &mdash; no usable window found, with the dominant
+        reason (high waves, strong wind, heavy rain, or low tide).</li>
+    </ul>
+    <p>
+      Minimum window: 1 hour for swimming, 2 hours for kayak and SUP.
+    </p>
+
+    <h2>Daylight</h2>
+    <p>
+      Activities are only scored during daylight hours. Sunrise and sunset times are shown on each day card.
+      Hours before sunrise or after sunset are excluded from the usable window.
+    </p>
+
+    <h2>Wetsuit Recommendations</h2>
+    <p>
+      Based on sea surface temperature, with a wind-chill adjustment (if wind exceeds 15 knots,
+      the effective temperature is shifted down by 2&deg;C, recommending one grade thicker):
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Sea Temperature</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>&gt; 20&deg;C</td><td>Boardshorts / swimsuit</td></tr>
+        <tr><td>17&ndash;20&deg;C</td><td>Shorty / 3/2mm spring suit</td></tr>
+        <tr><td>14&ndash;17&deg;C</td><td>3/2mm full wetsuit</td></tr>
+        <tr><td>12&ndash;14&deg;C</td><td>4/3mm wetsuit + boots</td></tr>
+        <tr><td>10&ndash;12&deg;C</td><td>5/4mm + boots &amp; gloves</td></tr>
+        <tr><td>&lt; 10&deg;C</td><td>5/4mm + hood, boots &amp; gloves</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Limitations</h2>
+    <ul>
+      <li>Forecast data is model-based and may not reflect actual conditions. Always verify on arrival.</li>
+      <li>Wave data is from an offshore model &mdash; inshore conditions at Littlehampton
+        (inside the harbour, river mouth) may differ significantly.</li>
+      <li>Tidal predictions are for standard port Littlehampton &mdash; actual water levels can vary
+        due to weather, atmospheric pressure and river flow.</li>
+      <li>Live wave data from the Rustington buoy is not quality-controlled and may have gaps or errors.</li>
+      <li>The scoring algorithm is a simplified guide. It does not account for local hazards, currents,
+        visibility, user experience level, or specific launch conditions.</li>
+      <li>This forecast is not suitable for navigation.</li>
+    </ul>
+
+    <p style="margin-top: 2rem;">
+      <a href="index.html" class="back-link">&larr; Back to forecast</a>
+    </p>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__disclaimer">
+      This forecast is for guidance only. Always check conditions on arrival, use your own judgement and verify data independently before entering the water. Not to be used for navigation.
+    </div>
+    <p class="footer__update">&copy; Littlehampton Beach Watersports Dashboard</p>
+  </footer>
+</body>
+</html>

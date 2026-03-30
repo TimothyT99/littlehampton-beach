@@ -21,6 +21,7 @@ const API = (() => {
         'wind_direction_10m',
         'visibility',
       ].join(','),
+      daily: 'sunrise,sunset',
       forecast_days: FORECAST_DAYS,
       wind_speed_unit: 'kn',
       timezone: 'Europe/London',
@@ -93,6 +94,7 @@ const API = (() => {
   /**
    * Merge weather + marine hourly data into a unified structure,
    * keyed by YYYY-MM-DD, with hourly arrays.
+   * Also extracts daily sunrise/sunset into a separate object.
    */
   function mergeHourlyData(weather, marine) {
     const days = {};
@@ -127,6 +129,29 @@ const API = (() => {
     }
 
     return days;
+  }
+
+  /**
+   * Extract daily sunrise/sunset times from weather response.
+   * Returns { 'YYYY-MM-DD': { sunrise: 'HH:MM', sunset: 'HH:MM', sunriseHour, sunsetHour } }
+   */
+  function extractDaylight(weather) {
+    const daylight = {};
+    const d = weather.daily;
+    if (!d || !d.sunrise) return daylight;
+
+    for (let i = 0; i < d.time.length; i++) {
+      const dateKey = d.time[i];
+      const rise = d.sunrise[i]; // e.g. "2026-03-30T06:42"
+      const set = d.sunset[i];
+      daylight[dateKey] = {
+        sunrise: rise.split('T')[1].substring(0, 5),
+        sunset: set.split('T')[1].substring(0, 5),
+        sunriseHour: parseInt(rise.split('T')[1].split(':')[0], 10),
+        sunsetHour: parseInt(set.split('T')[1].split(':')[0], 10),
+      };
+    }
+    return daylight;
   }
 
   /**
@@ -207,5 +232,5 @@ const API = (() => {
     });
   }
 
-  return { fetchAll, mergeHourlyData, groupTides, addTideState };
+  return { fetchAll, mergeHourlyData, extractDaylight, groupTides, addTideState };
 })();

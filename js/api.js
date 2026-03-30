@@ -78,6 +78,18 @@ const API = (() => {
     }
   }
 
+  /** Fetch live met station data — optional, graceful fallback */
+  async function fetchMet() {
+    try {
+      const res = await fetch('/.netlify/functions/met');
+      if (!res.ok) throw new Error(`${res.status}`);
+      return res.json();
+    } catch {
+      console.warn('Met station data unavailable.');
+      return null;
+    }
+  }
+
   /** Fetch storm overflow discharge data — optional, graceful fallback */
   async function fetchDischarges() {
     try {
@@ -95,14 +107,15 @@ const API = (() => {
    * Tides, coastal and discharges are optional — weather + marine are required.
    */
   async function fetchAll() {
-    const [weather, marine, tides, coastal, discharges] = await Promise.all([
+    const [weather, marine, tides, coastal, met, discharges] = await Promise.all([
       fetchWeather(),
       fetchMarine(),
       fetchTides(),
       fetchCoastal(),
+      fetchMet(),
       fetchDischarges(),
     ]);
-    return { weather, marine, tides, coastal, discharges };
+    return { weather, marine, tides, coastal, met, discharges };
   }
 
   /**

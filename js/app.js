@@ -5,7 +5,7 @@ const App = (() => {
 
   async function init() {
     try {
-      const { weather, marine, tides, coastal, discharges } = await API.fetchAll();
+      const { weather, marine, tides, coastal, met, discharges } = await API.fetchAll();
       const hourlyByDay = API.mergeHourlyData(weather, marine);
       const daylightByDay = API.extractDaylight(weather);
       const tidesByDay = API.groupTides(tides);
@@ -15,7 +15,7 @@ const App = (() => {
 
       allData = { hourlyByDay, tidesByDay, daylightByDay };
 
-      renderCurrentConditions(hourlyByDay, coastal);
+      renderCurrentConditions(hourlyByDay, coastal, met, tidesByDay);
       renderDischargeAlert(discharges);
       renderCards(hourlyByDay, tidesByDay, daylightByDay);
       updateTimestamp();
@@ -26,7 +26,7 @@ const App = (() => {
   }
 
   /* ── Current conditions (header) ─────────────────────── */
-  function renderCurrentConditions(hourlyByDay, coastal) {
+  function renderCurrentConditions(hourlyByDay, coastal, met, tidesByDay) {
     const el = document.getElementById('current-conditions');
     const now = new Date();
     const todayKey = Utils.toDateKey(now);
@@ -44,58 +44,80 @@ const App = (() => {
     });
     const current = todayData[Math.max(0, hourIdx)] || todayData[0];
 
+    // Use live data where available, fall back to forecast
+    const liveAirTemp = (met && met.airTemp !== null) ? met.airTemp : null;
+    const liveWind = (met && met.windSpeedKn !== null) ? met.windSpeedKn : null;
+    const liveGust = (met && met.gustSpeedKn !== null) ? met.gustSpeedKn : null;
+    const liveWindDir = (met && met.windDirection !== null) ? met.windDirection : null;
+
+    const displayAirTemp = liveAirTemp ?? current.airTemp;
+    const displayWind = liveWind ?? current.windSpeed;
+    const displayWindDir = liveWindDir ?? current.windDir;
+
     const seaTempForGear = (coastal && coastal.seaTemp) ? coastal.seaTemp : current.waterTemp;
-    const gear = Scoring.recommendGear(seaTempForGear, current.airTemp, current.windSpeed);
+    const gear = Scoring.recommendGear(seaTempForGear, displayAirTemp, displayWind);
     const peakUV = Scoring.peakUVForDay(todayData);
     const sunRec = Scoring.recommendSun(peakUV);
 
+    const hasLive = coastal || met;
+    const liveLabel = hasLive ? '<span class="live-dot"></span> Live' : 'Forecast';
+
+    // Build live conditions section
     let html = `
       <div class="current-group">
-        <div class="current-group__label">Forecast</div>
+        <div class="current-group__label">${liveLabel}</div>
         <div class="current-stat">
-          <div class="current-stat__value">${Utils.r1(current.airTemp)}&deg;C</div>
-          <div class="current-stat__label">Air Temp</div>
+          <div class="current-stat__value">${Utils.r1(displayAirTemp)}&deg;C</div>
+          <div class="current-stat__label">Air${liveAirTemp !== null ? '' : ' (fcst)'}</div>
         </div>
-        ${current.waterTemp !== null ? `
+        ${seaTempForGear !== null ? `
         <div class="current-stat">
-          <div class="current-stat__value">${Utils.r1(current.waterTemp)}&deg;C</div>
-          <div class="current-stat__label">Sea Temp</div>
+          <div class="current-stat__value">${Utils.r1(seaTempForGear)}&deg;C</div>
+          <div class="current-stat__label">Sea</div>
         </div>` : ''}
         <div class="current-stat">
-          <div class="current-stat__value">${Utils.r1(current.windSpeed)} kn</div>
-          <div class="current-stat__label">Wind ${Utils.windCompass(current.windDir)}</div>
+          <div class="current-stat__value">${Utils.r1(displayWind)} kn${liveGust ? ` (${Utils.r1(liveGust)})` : ''}</div>
+          <div class="current-stat__label">Wind${liveWindDir !== null ? ' ' + Utils.windCompass(displayWindDir) : ''}</div>
         </div>
+        ${coastal && coastal.waveHeight !== null ? `
+        <div class="current-stat">
+          <div class="current-stat__value">${coastal.waveHeight} m</div>
+          <div class="current-stat__label">Waves</div>
+        </div>` : `
         <div class="current-stat">
           <div class="current-stat__value">${Utils.r1(current.waveHeight ?? 0)} m</div>
-          <div class="current-stat__label">Waves</div>
-        </div>
+          <div class="current-stat__label">Waves (fcst)</div>
+        </div>`}
       </div>
     `;
 
-    if (coastal && coastal.waveHeight !== null) {
+    // Tide countdown
+    const tideInfo = getNextTide(tidesByDay, now);
+    if (tideInfo) {
       html += `
         <div class="current-divider"></div>
         <div class="current-group">
-          <div class="current-group__label"><span class="live-dot"></span> Live \u2014 Rustington</div>
+          <div class="current-group__label">Tides</div>
           <div class="current-stat">
-            <div class="current-stat__value">${coastal.waveHeight} m</div>
-            <div class="current-stat__label">Waves</div>
+            <div class="current-stat__value">${tideInfo.icon} ${tideInfo.time}</div>
+            <div class="current-stat__label">${tideInfo.label} (${tideInfo.height}m)</div>
           </div>
-          ${coastal.seaTemp !== null ? `
+          ${tideInfo.next ? `
           <div class="current-stat">
-            <div class="current-stat__value">${coastal.seaTemp}&deg;C</div>
-            <div class="current-stat__label">Sea Temp</div>
+            <div class="current-stat__value">${tideInfo.next.icon} ${tideInfo.next.time}</div>
+            <div class="current-stat__label">${tideInfo.next.label} (${tideInfo.next.height}m)</div>
           </div>` : ''}
-          ${coastal.peakPeriod !== null ? `
           <div class="current-stat">
-            <div class="current-stat__value">${coastal.peakPeriod} s</div>
-            <div class="current-stat__label">Period</div>
-          </div>` : ''}
+            <div class="current-stat__value">${tideInfo.countdown}</div>
+            <div class="current-stat__label">${tideInfo.countdownLabel}</div>
+          </div>
         </div>
       `;
     }
 
+    // What to wear
     html += `
+      <div class="current-divider"></div>
       <div class="current-group">
         <div class="current-stat">
           <div class="current-stat__value">${gear.icon} ${gear.text}</div>
@@ -110,6 +132,60 @@ const App = (() => {
     `;
 
     el.innerHTML = html;
+  }
+
+  /**
+   * Find the next upcoming tide event and the one after it.
+   * Returns { icon, label, time, height, countdown, countdownLabel, next? }
+   */
+  function getNextTide(tidesByDay, now) {
+    // Collect all tide events from today and tomorrow
+    const todayKey = Utils.toDateKey(now);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowKey = Utils.toDateKey(tomorrow);
+
+    const allTides = [
+      ...(tidesByDay[todayKey] || []),
+      ...(tidesByDay[tomorrowKey] || []),
+    ];
+
+    if (!allTides.length) return null;
+
+    // Find the next event after now
+    const upcoming = allTides.filter(t => t.date > now);
+    if (!upcoming.length) return null;
+
+    const nextTide = upcoming[0];
+    const afterNext = upcoming.length > 1 ? upcoming[1] : null;
+
+    // Calculate countdown
+    const diffMs = nextTide.date - now;
+    const diffH = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffM = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const countdown = diffH > 0 ? `${diffH}h ${diffM}m` : `${diffM}m`;
+
+    const isHigh = nextTide.type === 'HighWater';
+    const result = {
+      icon: isHigh ? '\u25B2' : '\u25BC',
+      label: isHigh ? 'High tide' : 'Low tide',
+      time: nextTide.time,
+      height: nextTide.height,
+      countdown,
+      countdownLabel: `to ${isHigh ? 'high' : 'low'}`,
+    };
+
+    if (afterNext) {
+      const isNextHigh = afterNext.type === 'HighWater';
+      result.next = {
+        icon: isNextHigh ? '\u25B2' : '\u25BC',
+        label: isNextHigh ? 'High' : 'Low',
+        time: afterNext.time,
+        height: afterNext.height,
+      };
+    }
+
+    return result;
   }
 
   /* ── Sewage discharge alert ───────────────────────────── */

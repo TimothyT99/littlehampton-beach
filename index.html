@@ -43,12 +43,25 @@
   </main>
 
   <footer class="footer">
-    <p>
-      Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (CC BY 4.0).
-      Tidal data by <a href="https://www.admiralty.co.uk" target="_blank" rel="noopener">ADMIRALTY</a>.
-      Live wave data by <a href="https://coastalmonitoring.org/" target="_blank" rel="noopener">Channel Coastal Observatory</a>.
-    </p>
-    <p class="footer__update">Last updated: <span id="last-updated">—</span></p>
+    <div class="footer__disclaimer">
+      This forecast is for guidance only. Always check conditions on arrival, use your own judgement and verify data independently before entering the water. Not to be used for navigation.
+    </div>
+
+    <div class="footer__sources">
+      <p>
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a> (CC BY 4.0).
+      </p>
+      <p>
+        Contains ADMIRALTY&reg; tidal data: &copy; Crown copyright and database right.
+      </p>
+      <p>
+        Real-time wave data from the <a href="https://coastalmonitoring.org/" target="_blank" rel="noopener">Regional Coastal Monitoring Programme</a>,
+        made freely available under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">Open Government Licence</a>.
+        These are real-time data and are not quality-controlled.
+      </p>
+    </div>
+
+    <p class="footer__update">Last updated: <span id="last-updated">&mdash;</span></p>
   </footer>
 
   <script src="js/utils.js"></script>

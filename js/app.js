@@ -166,7 +166,9 @@ const App = (() => {
           <div class="discharge__text">
             <strong>Sewage discharge alert</strong> \u2014
             ${active.length} overflow${active.length > 1 ? 's' : ''} active (${desc}).
-            <span class="discharge__detail">${context} Check before entering the water.</span>
+            <span class="discharge__detail">${context} Check before entering the water.
+              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">View live map &rarr;</a>
+            </span>
           </div>
         </div>
       `;
@@ -195,7 +197,9 @@ const App = (() => {
             <strong>Recent discharge</strong> \u2014
             ${catLabel} overflow ended ${hoursAgo}h ago (${Utils.formatTime(endDate)}, ${Utils.formatDate(endDate)}).
             ${recentOutfalls.length > 1 ? `${recentOutfalls.length} outfalls discharged in the last 48h. ` : ''}
-            <span class="discharge__detail">Water quality may still be affected.</span>
+            <span class="discharge__detail">Water quality may still be affected.
+              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">View live map &rarr;</a>
+            </span>
           </div>
         </div>
       `;

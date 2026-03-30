@@ -132,6 +132,7 @@ a { color: var(--blue-mid); }
 .discharge__icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
 .discharge__text { flex: 1; }
 .discharge__detail { display: block; font-size: 0.78rem; margin-top: 0.15rem; opacity: 0.8; }
+.discharge__link { font-weight: 500; white-space: nowrap; }
 
 .dot {
   width: 10px;

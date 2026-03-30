@@ -196,8 +196,9 @@ const App = (() => {
     tributary: 'local waterway',
   };
 
+  const SW_HISTORY_URL = 'https://dv.riversandseaswatch.southernwater.co.uk/release-history';
+
   function describeOutfalls(list) {
-    // Group by category and describe
     const byCat = {};
     list.forEach(o => {
       const cat = o.category || 'coastal';
@@ -209,6 +210,10 @@ const App = (() => {
     if (byCat.river) parts.push(`${byCat.river.length} River Arun`);
     if (byCat.tributary) parts.push(`${byCat.tributary.length} tributary`);
     return parts.join(', ');
+  }
+
+  function listOutfallIds(list) {
+    return list.map(o => `${o.id} (${o.waterCourse})`).join(', ');
   }
 
   function renderDischargeAlert(discharges) {
@@ -242,8 +247,11 @@ const App = (() => {
           <div class="discharge__text">
             <strong>Sewage discharge alert</strong> \u2014
             ${active.length} overflow${active.length > 1 ? 's' : ''} active (${desc}).
-            <span class="discharge__detail">${context} Check before entering the water.
-              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">View live map &rarr;</a>
+            <span class="discharge__detail">
+              ${context} Check before entering the water.<br>
+              Outfalls: ${listOutfallIds(active)}.
+              <a href="${SW_HISTORY_URL}" target="_blank" rel="noopener" class="discharge__link">Southern Water details &rarr;</a>
+              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">Live map &rarr;</a>
             </span>
           </div>
         </div>
@@ -273,8 +281,10 @@ const App = (() => {
             <strong>Recent discharge</strong> \u2014
             ${catLabel} overflow ended ${hoursAgo}h ago (${Utils.formatTime(endDate)}, ${Utils.formatDate(endDate)}).
             ${recentOutfalls.length > 1 ? `${recentOutfalls.length} outfalls discharged in the last 48h. ` : ''}
-            <span class="discharge__detail">Water quality may still be affected.
-              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">View live map &rarr;</a>
+            <span class="discharge__detail">
+              Water quality may still be affected. ${mostRecent.id} (${mostRecent.waterCourse}).
+              <a href="${SW_HISTORY_URL}" target="_blank" rel="noopener" class="discharge__link">Southern Water details &rarr;</a>
+              <a href="https://www.streamwaterdata.co.uk/pages/storm-overflows-data" target="_blank" rel="noopener" class="discharge__link">Live map &rarr;</a>
             </span>
           </div>
         </div>

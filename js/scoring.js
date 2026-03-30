@@ -21,47 +21,50 @@ const Scoring = (() => {
     };
   }
 
+  // Treat null/undefined as 0 for safe numeric comparison
+  function n(v) { return v ?? 0; }
+
   function scoreSwim(wave, wind, precip, tide) {
-    if (wave > 1) return 'poor';
-    if (wind > 20) return 'poor';
-    if (precip > 4) return 'poor';
+    if (n(wave) > 1) return 'poor';
+    if (n(wind) > 20) return 'poor';
+    if (n(precip) > 4) return 'poor';
 
     let base = 'good';
-    if (wave > 0.5) base = 'fair';
-    else if (wind > 15) base = 'fair';
-    else if (precip > 1) base = 'fair';
+    if (n(wave) > 0.5) base = 'fair';
+    else if (n(wind) > 15) base = 'fair';
+    else if (n(precip) > 1) base = 'fair';
 
     if (tide === 'low') base = downgrade(base);
     return base;
   }
 
   function scoreKayak(wave, wind, gusts, precip, tide) {
-    if (wave > 0.7) return 'poor';
-    if (wind > 18) return 'poor';
-    if (gusts > 25) return 'poor';
-    if (precip > 4) return 'poor';
+    if (n(wave) > 0.7) return 'poor';
+    if (n(wind) > 18) return 'poor';
+    if (n(gusts) > 25) return 'poor';
+    if (n(precip) > 4) return 'poor';
 
     let base = 'good';
-    if (wave > 0.3) base = 'fair';
-    else if (wind > 12) base = 'fair';
-    else if (gusts > 18) base = 'fair';
-    else if (precip > 1) base = 'fair';
+    if (n(wave) > 0.3) base = 'fair';
+    else if (n(wind) > 12) base = 'fair';
+    else if (n(gusts) > 18) base = 'fair';
+    else if (n(precip) > 1) base = 'fair';
 
     if (tide === 'low' || tide === 'near_low') base = downgrade(base);
     return base;
   }
 
   function scoreSup(wave, wind, gusts, precip, tide) {
-    if (wave > 0.5) return 'poor';
-    if (wind > 15) return 'poor';
-    if (gusts > 20) return 'poor';
-    if (precip > 3) return 'poor';
+    if (n(wave) > 0.5) return 'poor';
+    if (n(wind) > 15) return 'poor';
+    if (n(gusts) > 20) return 'poor';
+    if (n(precip) > 3) return 'poor';
 
     let base = 'good';
-    if (wave > 0.3) base = 'fair';
-    else if (wind > 10) base = 'fair';
-    else if (gusts > 15) base = 'fair';
-    else if (precip > 0.5) base = 'fair';
+    if (n(wave) > 0.3) base = 'fair';
+    else if (n(wind) > 10) base = 'fair';
+    else if (n(gusts) > 15) base = 'fair';
+    else if (n(precip) > 0.5) base = 'fair';
 
     if (tide === 'low' || tide === 'near_low') base = downgrade(base);
     return base;

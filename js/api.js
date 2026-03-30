@@ -33,25 +33,30 @@ const API = (() => {
     return res.json();
   }
 
-  /** Fetch marine forecast from Open-Meteo */
+  /** Fetch marine forecast from Open-Meteo — degrades gracefully */
   async function fetchMarine() {
-    const params = new URLSearchParams({
-      latitude: LAT,
-      longitude: LON,
-      hourly: [
-        'wave_height',
-        'wave_period',
-        'wave_direction',
-        'swell_wave_height',
-        'sea_surface_temperature',
-      ].join(','),
-      forecast_days: FORECAST_DAYS,
-      timezone: 'Europe/London',
-    });
+    try {
+      const params = new URLSearchParams({
+        latitude: LAT,
+        longitude: LON,
+        hourly: [
+          'wave_height',
+          'wave_period',
+          'wave_direction',
+          'swell_wave_height',
+          'sea_surface_temperature',
+        ].join(','),
+        forecast_days: FORECAST_DAYS,
+        timezone: 'Europe/London',
+      });
 
-    const res = await fetch(`https://marine-api.open-meteo.com/v1/marine?${params}`);
-    if (!res.ok) throw new Error(`Marine API error: ${res.status}`);
-    return res.json();
+      const res = await fetch(`https://marine-api.open-meteo.com/v1/marine?${params}`);
+      if (!res.ok) throw new Error(`${res.status}`);
+      return res.json();
+    } catch {
+      console.warn('Marine API unavailable \u2014 wave/sea temp data will be missing.');
+      return null;
+    }
   }
 
   /** Fetch tidal events — tries Netlify proxy first, falls back gracefully */
@@ -126,7 +131,7 @@ const API = (() => {
   function mergeHourlyData(weather, marine) {
     const days = {};
     const wh = weather.hourly;
-    const mh = marine.hourly;
+    const mh = marine ? marine.hourly : null;
 
     for (let i = 0; i < wh.time.length; i++) {
       const time = wh.time[i];
@@ -147,12 +152,12 @@ const API = (() => {
         windDir: wh.wind_direction_10m[i],
         visibility: wh.visibility[i],
         uvIndex: wh.uv_index[i],
-        // Marine (may be shorter array)
-        waveHeight: mh.wave_height[i] ?? null,
-        wavePeriod: mh.wave_period[i] ?? null,
-        waveDir: mh.wave_direction[i] ?? null,
-        swellHeight: mh.swell_wave_height[i] ?? null,
-        waterTemp: mh.sea_surface_temperature[i] ?? null,
+        // Marine (may be null if API is down)
+        waveHeight: mh ? (mh.wave_height[i] ?? null) : null,
+        wavePeriod: mh ? (mh.wave_period[i] ?? null) : null,
+        waveDir: mh ? (mh.wave_direction[i] ?? null) : null,
+        swellHeight: mh ? (mh.swell_wave_height[i] ?? null) : null,
+        waterTemp: mh ? (mh.sea_surface_temperature[i] ?? null) : null,
       });
     }
 
